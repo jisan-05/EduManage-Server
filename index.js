@@ -29,6 +29,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     const db = client.db("Edu-Manager")
     const classCollection = db.collection("class")
+    const feedBackCollection = db.collection("feedback")
 
     
     // add class 
@@ -41,6 +42,12 @@ async function run() {
       res.send(result)
 
     })
+    // Add FeedBack
+    app.post('/feedback',async(req,res)=>{
+      const feedBackData = req.body;
+      const result = await feedBackCollection.insertOne(feedBackData)
+      res.send(result)
+    })
 
 
     // Get All Classes
@@ -48,6 +55,7 @@ async function run() {
       const result = await classCollection.find().toArray()
       res.send(result)
     })
+    
 
 
     await client.connect();
