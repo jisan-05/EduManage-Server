@@ -12,7 +12,7 @@ app.use(morgan('dev'));
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.USER_DB}:${process.env.USER_PASS}@cluster0.pmlso.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -30,6 +30,7 @@ async function run() {
     const db = client.db("Edu-Manager")
     const classCollection = db.collection("class")
     const feedBackCollection = db.collection("feedback")
+    const techOnCollection = db.collection("techOn")
 
     
     // add class 
@@ -48,11 +49,26 @@ async function run() {
       const result = await feedBackCollection.insertOne(feedBackData)
       res.send(result)
     })
+    app.post('/techOn',async(req,res)=>{
+      const techData = req.body;
+      const techDataWithStatus = {
+        ...techData,status:"pending"
+      }
+      const result = await techOnCollection.insertOne(techDataWithStatus)
+      res.send(result)
+    })
 
 
     // Get All Classes
     app.get('/class',async(req,res)=>{
       const result = await classCollection.find().toArray()
+      res.send(result)
+    })
+    // Get Specific Classes by id
+    app.get('/class/:id',async(req,res)=>{
+      const id = req.params.id;
+       const query = { _id: new ObjectId(id) }; // ✅ Correct usage
+      const result = await classCollection.findOne(query)
       res.send(result)
     })
     
