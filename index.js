@@ -1,97 +1,128 @@
-const express = require('express');
-require('dotenv').config();
-const app = express()
-const cors = require('cors');
+const express = require("express");
+require("dotenv").config();
+const app = express();
+const cors = require("cors");
 const port = process.env.port || 5000;
-const morgan = require('morgan');
+const morgan = require("morgan");
 
+app.use(express.json());
+app.use(cors());
+app.use(morgan("dev"));
 
-app.use(express.json())
-app.use(cors())
-app.use(morgan('dev'));
-
-
-
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.USER_DB}:${process.env.USER_PASS}@cluster0.pmlso.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    },
 });
 
 async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    const db = client.db("Edu-Manager")
-    const classCollection = db.collection("class")
-    const feedBackCollection = db.collection("feedback")
-    const techOnCollection = db.collection("techOn")
+    try {
+        // Connect the client to the server	(optional starting in v4.7)
+        const db = client.db("Edu-Manager");
+        const userCollection = db.collection("user");
+        const classCollection = db.collection("class");
+        const feedBackCollection = db.collection("feedback");
+        const techOnCollection = db.collection("techOn");
 
-    
-    // add class 
-    app.post('/class',async(req,res)=>{
-      const classData = req.body;
-      const classDataWithStatus = {
-        ...classData,status:"pending"
-      }
-      const result = await classCollection.insertOne(classDataWithStatus)
-      res.send(result)
+        // add new User
+        app.post("/users/:email", async (req, res) => {
+            const email = req.params.email;
+            const userData = req.body;
+            const query = { email: email };
+            const isExist = await userCollection.findOne(query);
+            if (isExist) {
+                return res.send(isExist);
+            }
+            const result = await userCollection.insertOne({
+                ...userData,
+                role: "student",
+                timestamp: Date.now(),
+            });
+            res.send(result);
+        });
 
-    })
-    // Add FeedBack
-    app.post('/feedback',async(req,res)=>{
-      const feedBackData = req.body;
-      const result = await feedBackCollection.insertOne(feedBackData)
-      res.send(result)
-    })
-    app.post('/techOn',async(req,res)=>{
-      const techData = req.body;
-      const techDataWithStatus = {
-        ...techData,status:"pending"
-      }
-      const result = await techOnCollection.insertOne(techDataWithStatus)
-      res.send(result)
-    })
+        // get all user
+        app.get("/user", async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result);
+        });
 
+        // add class
+        app.post("/class", async (req, res) => {
+            const classData = req.body;
+            const classDataWithStatus = {
+                ...classData,
+                status: "pending",
+            };
+            const result = await classCollection.insertOne(classDataWithStatus);
+            res.send(result);
+        });
+        // Add FeedBack
+        app.post("/feedback", async (req, res) => {
+            const feedBackData = req.body;
+            const result = await feedBackCollection.insertOne(feedBackData);
+            res.send(result);
+        });
+        app.post("/techOn", async (req, res) => {
+            const techData = req.body;
+            const techDataWithStatus = {
+                ...techData,
+                status: "pending",
+            };
+            const result = await techOnCollection.insertOne(techDataWithStatus);
+            res.send(result);
+        });
+        app.get("/teacher-requests", async (req, res) => {
+            const result = await techOnCollection.find().toArray();
+            res.send(result);
+        });
+        app.patch("/teacher-status/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const doc = req.body;
+            const updateDoc = {
+                $set: doc,
+            };
+            const result = await techOnCollection.updateOne(query, updateDoc);
+            res.send(result);
+        });
 
-    // Get All Classes
-    app.get('/class',async(req,res)=>{
-      const result = await classCollection.find().toArray()
-      res.send(result)
-    })
-    // Get Specific Classes by id
-    app.get('/class/:id',async(req,res)=>{
-      const id = req.params.id;
-       const query = { _id: new ObjectId(id) }; // ✅ Correct usage
-      const result = await classCollection.findOne(query)
-      res.send(result)
-    })
-    
+        // Get All Classes
+        app.get("/class", async (req, res) => {
+            const result = await classCollection.find().toArray();
+            res.send(result);
+        });
+        // Get Specific Classes by id
+        app.get("/class/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }; // ✅ Correct usage
+            const result = await classCollection.findOne(query);
+            res.send(result);
+        });
 
-
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
-  }
+        await client.connect();
+        // Send a ping to confirm a successful connection
+        await client.db("admin").command({ ping: 1 });
+        console.log(
+            "Pinged your deployment. You successfully connected to MongoDB!"
+        );
+    } finally {
+        // Ensures that the client will close when you finish/error
+        // await client.close();
+    }
 }
 run().catch(console.dir);
 
+app.get("/", (req, res) => {
+    res.send("Basic NextClass Server is Running");
+});
 
-
-
-app.get('/',(req,res)=>{
-  res.send("Basic NextClass Server is Running")
-})
-
-app.listen(port, () =>{
-  console.log("NextClass running on Port : ",port)
-})
+app.listen(port, () => {
+    console.log("NextClass running on Port : ", port);
+});
