@@ -52,6 +52,20 @@ async function run() {
             const result = await userCollection.find().toArray();
             res.send(result);
         });
+        app.get("/user/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = {email:email}
+            const result = await userCollection.findOne()
+            res.send(result);
+        });
+
+        // get user role
+        app.get("/users/role/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await userCollection.findOne(query);
+            res.send({ role: result?.role });
+        });
 
         // add class
         app.post("/class", async (req, res) => {
@@ -92,6 +106,18 @@ async function run() {
             const result = await techOnCollection.updateOne(query, updateDoc);
             res.send(result);
         });
+
+        // update role 
+        app.patch("/updateRole/:email",async(req,res)=>{
+            const email = req.params.email;
+            const query = {email:email}
+            const doc = req.body;
+            const updateDoc = {
+                $set:doc,
+            }
+            const result = await userCollection.updateOne(query,updateDoc)
+            res.send(result)
+        })
 
         // Get All Classes
         app.get("/class", async (req, res) => {
