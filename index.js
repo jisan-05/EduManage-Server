@@ -32,6 +32,7 @@ async function run() {
         const enrollmentCollection = db.collection("enrollment"); // ✅ consistent naming
         const assignmentCollection = db.collection("assignment");
         const submissionCollection = db.collection("submission");
+        const eventsCollection = db.collection("events");
 
         // add new User
         app.post("/users/:email", async (req, res) => {
@@ -99,7 +100,7 @@ async function run() {
         });
         // Get accepted All Classes
         app.get("/acceptedClass", async (req, res) => {
-            const query = {status:"accepted"}
+            const query = { status: "accepted" };
             const result = await classCollection.find(query).toArray();
             res.send(result);
         });
@@ -300,6 +301,27 @@ async function run() {
                 res.status(500).send({ message: "Internal server error" });
             }
         });
+
+        // add events
+        app.post("/events", async (req, res) => {
+            const eventData = req.body;
+            const result = await eventsCollection.insertOne(eventData);
+            res.send(result);
+        });
+        app.get("/events", async (req, res) => {
+            const result = await eventsCollection.find().toArray();
+            res.send(result);
+        });
+        app.delete(
+            "/events/:id",
+            
+            async (req, res) => {
+                const id = req.params.id;
+                const query = { _id: new ObjectId(id) };
+                const result = await eventsCollection.deleteOne(query);
+                res.send(result);
+            }
+        );
 
         app.get("/teacher-requests", async (req, res) => {
             const result = await techOnCollection.find().toArray();
